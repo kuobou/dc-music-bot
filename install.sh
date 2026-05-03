@@ -53,9 +53,9 @@ echo "✅ yt-dlp $(yt-dlp --version)"
 if ! command -v ffmpeg &>/dev/null; then
   echo "📦 安裝 ffmpeg..."
   if command -v apt-get &>/dev/null; then
-    sudo apt-get install -y ffmpeg
+    apt-get install -y ffmpeg
   elif command -v yum &>/dev/null; then
-    sudo yum install -y ffmpeg
+    yum install -y ffmpeg
   elif command -v brew &>/dev/null; then
     brew install ffmpeg
   else
