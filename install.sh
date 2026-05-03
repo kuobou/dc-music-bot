@@ -18,6 +18,7 @@ if [ ! -f "package.json" ]; then
   git clone "$REPO_URL" "$INSTALL_DIR"
   cd "$INSTALL_DIR"
   echo "✅ 已進入目錄：$(pwd)"
+  exec bash install.sh
 fi
 
 # 1. 安裝 Node.js
