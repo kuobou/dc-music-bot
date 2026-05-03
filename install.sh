@@ -46,19 +46,30 @@ echo "✅ npm 套件安裝完成"
 
 # 5. 設定 .env
 if [ ! -f ".env" ]; then
-  if [ -f ".env.example" ]; then
-    cp .env.example .env
-    echo ""
-    echo "⚠️  已建立 .env 檔案，請填入你的 Discord Token："
-    echo "    nano .env   或   vim .env"
-    echo ""
-    read -p "填好後按 Enter 繼續..." _
-  else
-    echo "❌ 找不到 .env.example，請手動建立 .env"
-    exit 1
-  fi
+  echo ""
+  echo "=============================="
+  echo "  設定 Discord Bot 憑證"
+  echo "=============================="
+  echo "請前往 https://discord.com/developers/applications 取得以下資訊："
+  echo ""
+  read -p "請輸入 DISCORD_TOKEN：" DISCORD_TOKEN
+  while [ -z "$DISCORD_TOKEN" ]; do
+    echo "❌ Token 不能為空"
+    read -p "請輸入 DISCORD_TOKEN：" DISCORD_TOKEN
+  done
+  read -p "請輸入 CLIENT_ID（Application ID）：" CLIENT_ID
+  while [ -z "$CLIENT_ID" ]; do
+    echo "❌ Client ID 不能為空"
+    read -p "請輸入 CLIENT_ID：" CLIENT_ID
+  done
+  cat > .env <<EOF
+DISCORD_TOKEN=${DISCORD_TOKEN}
+CLIENT_ID=${CLIENT_ID}
+EOF
+  echo "✅ .env 已建立（Token 僅存在此伺服器，不會上傳到 GitHub）"
+else
+  echo "✅ .env 已存在，跳過設定"
 fi
-echo "✅ .env 已就緒"
 
 # 6. 啟動機器人
 echo ""
