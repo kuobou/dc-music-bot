@@ -20,10 +20,19 @@ if [ ! -f "package.json" ]; then
   echo "✅ 已進入目錄：$(pwd)"
 fi
 
-# 1. 檢查 Node.js
+# 1. 安裝 Node.js
 if ! command -v node &>/dev/null; then
-  echo "❌ 找不到 Node.js，請先安裝：https://nodejs.org/"
-  exit 1
+  echo "📦 安裝 Node.js..."
+  if command -v apt-get &>/dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+    apt-get install -y nodejs
+  elif command -v yum &>/dev/null; then
+    curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+    yum install -y nodejs
+  else
+    echo "❌ 無法自動安裝 Node.js，請手動安裝：https://nodejs.org/"
+    exit 1
+  fi
 fi
 echo "✅ Node.js $(node -v)"
 
