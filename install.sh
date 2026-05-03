@@ -1,9 +1,24 @@
 #!/bin/bash
 set -e
 
+REPO_URL="https://github.com/kuobou/dc-music-bot.git"
+INSTALL_DIR="dc-music-bot"
+
 echo "=============================="
 echo "  DC Music Bot 一鍵部署腳本"
 echo "=============================="
+
+# 0. Clone repo（若尚未在專案目錄內）
+if [ ! -f "package.json" ]; then
+  if ! command -v git &>/dev/null; then
+    echo "📦 安裝 git..."
+    apt-get install -y git 2>/dev/null || yum install -y git 2>/dev/null || true
+  fi
+  echo "📥 下載專案..."
+  git clone "$REPO_URL" "$INSTALL_DIR"
+  cd "$INSTALL_DIR"
+  echo "✅ 已進入目錄：$(pwd)"
+fi
 
 # 1. 檢查 Node.js
 if ! command -v node &>/dev/null; then
