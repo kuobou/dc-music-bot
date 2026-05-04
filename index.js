@@ -195,7 +195,7 @@ function playStream(guildId, song) {
   if (!q || !song) return;
   const ytdlp = spawn("yt-dlp", ["-f", "bestaudio/best", "--no-playlist", "--buffer-size", "4M", "-o", "-", song.url]);
   const ffmpeg = new prism.FFmpeg({ args: ["-analyzeduration", "0", "-loglevel", "0", "-f", "s16le", "-ar", "48000", "-ac", "2"] });
-  q.player.play(createAudioResource(ytdlp.stdout.pipe(ffmpeg), { inputType: StreamType.Raw }));
+  q.player.play(createAudioResource(ytdlp.stdout.pipe(ffmpeg), { inputType: StreamType.Raw, inlineVolume: true }));
 }
 
 client.login(process.env.DISCORD_TOKEN);
