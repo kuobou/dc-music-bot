@@ -84,7 +84,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.deferReply();
 
     const isUrl = query.startsWith('http');
-    const searchTarget = isUrl ? query : `ytsearch1:${query}`;
+    const searchTarget = isUrl ? query : `ytsearch5:${query}`;
     
     // 改用 --playlist-end 20 限制只抓取前 20 首
     const ytdl = spawn("yt-dlp", [
@@ -107,6 +107,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const id = lines[i+1]?.trim();
         if (title && id && id.length === 11) {
           foundSongs.push({ title, url: `https://www.youtube.com/watch?v=${id}` });
+          if (!isUrl) break; // 搜尋模式只取第一個有效影片
         }
       }
 
