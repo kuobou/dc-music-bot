@@ -27,6 +27,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/kuobou/dc-music-bot/main/ins
 ```
 
 腳本會自動完成：
+- 安裝 Node.js（若未安裝）
 - 安裝 `yt-dlp`、`ffmpeg`
 - 安裝 Node.js 套件
 - 引導你輸入 Discord Bot Token
@@ -69,13 +70,17 @@ CLIENT_ID=你的_Discord_Application_ID
 
 前往 [Discord Developer Portal](https://discord.com/developers/applications) 取得上述資訊。
 
+> **Bot 需要的權限：** `Connect`、`Speak`（語音頻道）
+
 ---
 
 ## pm2 常用指令
 
 ```bash
-pm2 logs dc-music-bot   # 查看即時日誌
+pm2 logs dc-music-bot     # 查看即時日誌
 pm2 restart dc-music-bot  # 重新啟動
-pm2 stop dc-music-bot   # 停止機器人
-pm2 status              # 查看所有程序狀態
+pm2 stop dc-music-bot     # 停止機器人
+pm2 status                # 查看所有程序狀態
+pm2 startup               # 設定開機自動啟動（輸出的指令需手動執行一次）
+pm2 save                  # 儲存目前程序列表供開機還原
 ```
