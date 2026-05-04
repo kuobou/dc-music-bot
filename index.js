@@ -103,8 +103,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       
       const foundSongs = [];
       for (let i = 0; i < lines.length; i += 2) {
-        if (lines[i] && lines[i+1]) {
-          foundSongs.push({ title: lines[i], url: `https://www.youtube.com/watch?v=${lines[i+1]}` });
+        const title = lines[i]?.trim();
+        const id = lines[i+1]?.trim();
+        if (title && id && id.length === 11) {
+          foundSongs.push({ title, url: `https://www.youtube.com/watch?v=${id}` });
         }
       }
 
