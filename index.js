@@ -118,10 +118,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!serverQueue) {
         const connection = joinVoiceChannel({ channelId: voiceChannel.id, guildId: guildId, adapterCreator: interaction.guild.voiceAdapterCreator });
         const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
-        const queueConstruct = { connection, player, songs: foundSongs, isLoop: (commandName === "loop"), timeoutId: null };
+        const queueConstruct = { connection, player, songs: foundSongs, isLoop: (commandName === "loop"), timeoutId: null, currentProcess: null };
         queues.set(guildId, queueConstruct);
         connection.subscribe(player);
-        
+
+        connection.on(VoiceConnectionStatus.Disconnected, async () => {
+          try {
+            await Promise.race([
+              enterState(connection, VoiceConnectionStatus.Signalling, { timeout: 5_000 }),
+              enterState(connection, VoiceConnectionStatus.Connecting, { timeout: 5_000 }),
+            ]);
+          } catch {
+            const q = queues.get(guildId);
+            if (q) {
+              if (q.currentProcess) q.currentProcess.kill();
+              if (q.timeoutId) clearTimeout(q.timeoutId);
+              try { q.connection.destroy(); } catch {}
+              queues.delete(guildId);
+              console.log(`[Voice] 與 ${guildId} 的連線已中斷，已清理隊列`);
+            }
+          }
+        });
+
         setupPlayerEvents(guildId);
         playStream(guildId, foundSongs[0]);
         
@@ -154,19 +172,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (commandName === "stop") {
     const q = queues.get(guildId);
-    if (q) { if (q.timeoutId) clearTimeout(q.timeoutId); q.connection.destroy(); queues.delete(guildId); interaction.reply("🛑 已停止播放"); }
-    else interaction.reply("不在頻道中");
+    if (q) {
+      if (q.timeoutId) clearTimeout(q.timeoutId);
+      if (q.currentProcess) q.currentProcess.kill();
+      q.player.stop(true);
+      q.connection.destroy();
+      queues.delete(guildId);
+      interaction.reply("🛑 已停止播放");
+    } else interaction.reply("不在頻道中");
   }
 
   if (commandName === "q") {
     const q = queues.get(guildId);
     if (!q || q.songs.length === 0) return interaction.reply("📋 隊列是空的");
-    
-    // 限制 /q 顯示前 20 首
+
     const list = q.songs.slice(0, 20).map((s, i) => `${i === 0 ? "▶️" : i + "."} ${s.title}`).join("\n");
     const more = q.songs.length > 20 ? `\n...還有 ${q.songs.length - 20} 首歌` : "";
-    
-    interaction.reply(`📋 **目前隊列 (上限顯示 20 首)：**\n${list}${more}${q.isLoop ? "\n\n🔁 全隊列循環中" : ""}`);
+    const loopStr = q.isLoop ? "\n\n🔁 全隊列循環中" : "";
+    let reply = `📋 **目前隊列 (上限顯示 20 首)：**\n${list}${more}${loopStr}`;
+    if (reply.length > 1900) reply = reply.substring(0, 1900) + "\n...（訊息過長已截斷）";
+    interaction.reply(reply);
   }
 
   if (commandName === "help") {
@@ -197,15 +222,19 @@ function setupPlayerEvents(guildId) {
 function playStream(guildId, song) {
   const q = queues.get(guildId);
   if (!q || !song) return;
+  if (q.currentProcess) { q.currentProcess.kill(); q.currentProcess = null; }
   console.log(`[Play] 嘗試播放: ${song.title}`);
   const ytdlp = spawn("yt-dlp", ["-f", "bestaudio/best", "--no-playlist", "--buffer-size", "4M", "-o", "-", song.url]);
+  q.currentProcess = ytdlp;
   ytdlp.stderr.on('data', (d) => console.error(`[yt-dlp stderr] ${d.toString().trim()}`));
   ytdlp.on('error', (err) => console.error(`[yt-dlp spawn error] ${err.message}`));
-  ytdlp.on('close', (code) => { if (code !== 0) console.error(`[yt-dlp] 結束碼: ${code}`); });
+  ytdlp.on('close', (code) => {
+    if (q.currentProcess === ytdlp) q.currentProcess = null;
+    if (code !== 0 && code !== null) console.error(`[yt-dlp] 結束碼: ${code}`);
+  });
   const ffmpeg = new prism.FFmpeg({ args: ["-analyzeduration", "0", "-loglevel", "0", "-f", "s16le", "-ar", "48000", "-ac", "2"] });
   ffmpeg.on('error', (err) => console.error(`[FFmpeg error] ${err.message}`));
   q.player.play(createAudioResource(ytdlp.stdout.pipe(ffmpeg), { inputType: StreamType.Raw, inlineVolume: true }));
-  console.log(`[Play] createAudioResource 完成，開始播放`);
 }
 
 client.login(process.env.DISCORD_TOKEN);
