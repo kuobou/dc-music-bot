@@ -177,8 +177,8 @@ function setupPlayerEvents(guildId) {
   q.player.on(AudioPlayerStatus.Idle, () => {
     const sq = queues.get(guildId);
     if (!sq) return;
-    const finished = sq.songs.shift(); 
-    if (sq.isLoop && finished) sq.songs.push(finished); 
+    const finished = sq.songs.shift();
+    if (sq.isLoop && finished) sq.songs.push(finished);
     if (sq.songs.length > 0) {
       playStream(guildId, sq.songs[0]);
     } else {
@@ -188,14 +188,21 @@ function setupPlayerEvents(guildId) {
       }, 5 * 60 * 1000);
     }
   });
+  q.player.on('error', (err) => console.error(`[Player Error] ${err.message}`));
 }
 
 function playStream(guildId, song) {
   const q = queues.get(guildId);
   if (!q || !song) return;
+  console.log(`[Play] 嘗試播放: ${song.title}`);
   const ytdlp = spawn("yt-dlp", ["-f", "bestaudio/best", "--no-playlist", "--buffer-size", "4M", "-o", "-", song.url]);
+  ytdlp.stderr.on('data', (d) => console.error(`[yt-dlp stderr] ${d.toString().trim()}`));
+  ytdlp.on('error', (err) => console.error(`[yt-dlp spawn error] ${err.message}`));
+  ytdlp.on('close', (code) => { if (code !== 0) console.error(`[yt-dlp] 結束碼: ${code}`); });
   const ffmpeg = new prism.FFmpeg({ args: ["-analyzeduration", "0", "-loglevel", "0", "-f", "s16le", "-ar", "48000", "-ac", "2"] });
+  ffmpeg.on('error', (err) => console.error(`[FFmpeg error] ${err.message}`));
   q.player.play(createAudioResource(ytdlp.stdout.pipe(ffmpeg), { inputType: StreamType.Raw, inlineVolume: true }));
+  console.log(`[Play] createAudioResource 完成，開始播放`);
 }
 
 client.login(process.env.DISCORD_TOKEN);
